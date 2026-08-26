@@ -1,0 +1,20 @@
+# Build files
+build/
+*.o
+*.exe
+build
+nitcbase
+nitcbase-debug
+
+# Temporary files
+.temp
+*.temp
+
+# Editor files
+.vscode/
+.idea/
+
+# Runtime files
+# Runtime database files
+Disk/disk
+Disk/disk_run_copy

@@ -1,0 +1,68 @@
+#include "AttrCacheTable.h"
+#include <cstring>
+
+AttrCacheEntry* AttrCacheTable::attrCache[MAX_OPEN];
+
+// STAGE 3
+// getAttrCatEntry - searches the cached linked list for the requested attribute and returns its AttrCatEntry.
+int AttrCacheTable::getAttrCatEntry(int relId, int attrOffset, AttrCatEntry *attrCatBuf) { // (0,3,attrCatBuf) - gets attr no.3 of relation with rel-id=0 and puts into *attrCatBuf
+
+    // Check relId
+    if (relId < 0 || relId >= MAX_OPEN){  // must be 0-11
+        return E_OUTOFBOUND;
+    }
+
+    // Check whether relation is open
+    if (attrCache[relId] == nullptr) {
+        return E_RELNOTOPEN;
+    }
+
+    // Traverse linked list
+    for ( AttrCacheEntry *entry = attrCache[relId];  entry != nullptr;   entry = entry->next ){
+
+        if (entry->attrCatEntry.offset == attrOffset){
+            // Copy the attribute catalog entry
+            *attrCatBuf = entry->attrCatEntry;
+            return SUCCESS;
+        }
+    }
+
+    return E_ATTRNOTEXIST;         // Attribute with this offset doesn't exist
+}
+
+
+// getAttrCatEntry - searches the cached linked list for the requested attribute and returns its AttrCatEntry.
+int AttrCacheTable::getAttrCatEntry(int relId, char attrName[ATTR_SIZE], AttrCatEntry *attrCatBuf) { // (0,3,attrCatBuf) - gets attr no.3 of relation with rel-id=0 and puts into *attrCatBuf
+    if (relId < 0 || relId >= MAX_OPEN){  //// Check relId - must be 0-11
+        return E_OUTOFBOUND;
+    }
+
+    if (attrCache[relId] == nullptr) {          // Check whether relation is open
+        return E_RELNOTOPEN;
+    }
+
+    // Traverse linked list
+    for ( AttrCacheEntry *entry = attrCache[relId];  entry != nullptr;   entry = entry->next ){
+
+        // Check attribute name
+        if (strcmp(entry->attrCatEntry.attrName, attrName) == 0) {
+            *attrCatBuf = entry->attrCatEntry;      // Copy matching entry
+            return SUCCESS;
+        }
+    }
+
+    return E_ATTRNOTEXIST;         // Attribute was not found
+}
+
+
+
+// recordToAttrCatEntry - converts a catalog record Attribute[] form into the attrCatEntry[] form
+void AttrCacheTable::recordToAttrCatEntry( union Attribute record[ATTRCAT_NO_ATTRS], AttrCatEntry *attrCatEntry) {
+
+    strcpy( attrCatEntry->relName, record[ATTRCAT_REL_NAME_INDEX].sVal );
+    strcpy( attrCatEntry->attrName, record[ATTRCAT_ATTR_NAME_INDEX].sVal );
+    attrCatEntry->attrType =  (int)record[ATTRCAT_ATTR_TYPE_INDEX].nVal;
+    attrCatEntry->primaryFlag = (bool)record[ATTRCAT_PRIMARY_FLAG_INDEX].nVal;
+    attrCatEntry->rootBlock = (int)record[ATTRCAT_ROOT_BLOCK_INDEX].nVal;
+    attrCatEntry->offset =  (int)record[ATTRCAT_OFFSET_INDEX].nVal;
+}
