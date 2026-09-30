@@ -169,3 +169,92 @@ int Algebra::select(
 
     return SUCCESS;
 }
+
+
+
+// stage 7 imp 
+// INSERT
+int Algebra::insert(char relName[ATTR_SIZE], int numberOfAttributes, char record[][ATTR_SIZE]) {
+    /*
+     * Insert a record into an existing relation.
+     *
+     * 1. Do not allow direct insertion into the catalogs.
+     * 2. Check that the relation is open.
+     * 3. Check that the number of attributes matches.
+     * 4. Convert each string value into an Attribute.
+     * 5. Pass the converted record to BlockAccess::insert().
+     */
+
+    // Catalogs cannot be directly modified by INSERT
+    if (strcmp(relName, RELCAT_RELNAME) == 0 ||
+        strcmp(relName, ATTRCAT_RELNAME) == 0) {
+        return E_NOTPERMITTED;
+    }
+
+    // Get the relation ID
+    int relId = OpenRelTable::getRelId(relName);
+
+    // Relation must be open
+    if (relId == E_RELNOTOPEN) {
+        return E_RELNOTOPEN;
+    }
+
+    // Get relation information from the cache
+    RelCatEntry relCatEntry;
+
+    int ret = RelCacheTable::getRelCatEntry(
+        relId,
+        &relCatEntry
+    );
+
+    if (ret != SUCCESS) {
+        return ret;
+    }
+
+    // Number of values must match number of attributes
+    if (relCatEntry.numAttrs != numberOfAttributes) {
+        return E_NATTRMISMATCH;
+    }
+
+    // This will hold the converted Attribute values
+    Attribute recordValues[numberOfAttributes];
+
+    // Convert each input value
+    for (int i = 0; i < numberOfAttributes; i++) {
+
+        AttrCatEntry attrCatEntry;
+
+        // Get information about this attribute
+        ret = AttrCacheTable::getAttrCatEntry(
+            relId,
+            i,
+            &attrCatEntry
+        );
+
+        if (ret != SUCCESS) {
+            return ret;
+        }
+
+        // If attribute is NUMBER
+        if (attrCatEntry.attrType == NUMBER) {
+
+            // Input must be a valid number
+            if (!isNumber(record[i])) {
+                return E_ATTRTYPEMISMATCH;
+            }
+
+            // Convert string → double
+            recordValues[i].nVal = atof(record[i]);
+        }
+
+        // If attribute is STRING
+        else if (attrCatEntry.attrType == STRING) {
+
+            // Copy string into Attribute
+            strcpy(recordValues[i].sVal, record[i]);
+        }
+    }
+
+    // Send converted record to Block Access layer
+    return BlockAccess::insert(relId, recordValues);
+}

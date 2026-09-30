@@ -81,3 +81,56 @@ int RelCacheTable::resetSearchIndex(int relId){
 
     return SUCCESS;
 }
+
+
+// stage 7 implementation
+// setRelCatEntry 
+int RelCacheTable::setRelCatEntry(int relId,
+                                  RelCatEntry *relCatBuf) {
+
+    // Check relation ID
+    if (relId < 0 || relId >= MAX_OPEN)
+        return E_OUTOFBOUND;
+
+    // Relation must be open
+    if (relCache[relId] == nullptr)
+        return E_RELNOTOPEN;
+
+    // Update relation cache entry
+    relCache[relId]->relCatEntry = *relCatBuf;
+
+    // Mark cache entry as modified
+    relCache[relId]->dirty = true;
+
+    return SUCCESS;
+}
+
+// relCatEntryToRecord()
+void RelCacheTable::relCatEntryToRecord(
+    RelCatEntry *relCatEntry,
+    union Attribute record[RELCAT_NO_ATTRS]) {
+
+    // Relation name
+    strcpy(record[RELCAT_REL_NAME_INDEX].sVal,
+           relCatEntry->relName);
+
+    // Number of attributes
+    record[RELCAT_NO_ATTRIBUTES_INDEX].nVal =
+        relCatEntry->numAttrs;
+
+    // Number of records
+    record[RELCAT_NO_RECORDS_INDEX].nVal =
+        relCatEntry->numRecs;
+
+    // First record block
+    record[RELCAT_FIRST_BLOCK_INDEX].nVal =
+        relCatEntry->firstBlk;
+
+    // Last record block
+    record[RELCAT_LAST_BLOCK_INDEX].nVal =
+        relCatEntry->lastBlk;
+
+    // Number of slots per block
+    record[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal =
+        relCatEntry->numSlotsPerBlk;
+}

@@ -363,6 +363,32 @@ int OpenRelTable::closeRel(int relId) {
         return E_RELNOTOPEN;
     }
 
+    // BEFORE FREEING RELATION CACHE, CHECK
+    // Check whether relation cache was modified
+    if (RelCacheTable::relCache[relId] != nullptr && RelCacheTable::relCache[relId]->dirty) {
+        RelCacheEntry *relEntry =
+            RelCacheTable::relCache[relId];
+
+        // Convert cache entry back to a record
+        Attribute record[RELCAT_NO_ATTRS];
+
+        RelCacheTable::relCatEntryToRecord(
+            &relEntry->relCatEntry,
+            record
+        );
+
+        // Write updated record back to RELCAT buffer
+        RecBuffer relCatBlock(relEntry->recId.block);
+
+        int ret = relCatBlock.setRecord(
+            record,
+            relEntry->recId.slot
+        );
+
+        if (ret != SUCCESS)
+            return ret;
+    }
+
     // free the relation cache entry
     if (RelCacheTable::relCache[relId] != nullptr) {
         free(RelCacheTable::relCache[relId]);
