@@ -9,3 +9,4 @@ My implementation of the NITCbase database system for the DB Lab.
 - Stage 3: Disk Buffer and Catalog Caches
 - Stage 4: Linear Search on Relations  
 - Stage 5: Opening Relations
+- Stage 6: Buffer Management and Disk Write-back
