@@ -141,7 +141,6 @@ int BlockBuffer::setBlockType(int blockType) {
     return SUCCESS;
 }
 
-//
 
 // since RecBuffer represents a record-block, it calles BlockBuffer constructor to store block number
 RecBuffer::RecBuffer()
@@ -193,7 +192,6 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) {
     int bufferNum = StaticBuffer::getBufferNum(
         this->blockNum
     );
-
 
     // Block is already present
     if (bufferNum >= 0) {
@@ -309,16 +307,13 @@ int RecBuffer::setRecord( union Attribute *rec, int slotNum) {
 
     // Load the block into the buffer
     int ret = loadBlockAndGetBufferPtr(&bufferPtr);
-
     if (ret != SUCCESS) {
         return ret;
     }
 
     // Get block information
     HeadInfo head;
-
     ret = getHeader(&head);
-
     if (ret != SUCCESS) {
         return ret;
     }
@@ -346,14 +341,11 @@ int RecBuffer::setRecord( union Attribute *rec, int slotNum) {
     memcpy(slotPointer, rec, recordSize);
 
     // Mark the block as modified
-    ret = StaticBuffer::setDirtyBit(
-        this->blockNum
-    );
+    ret = StaticBuffer::setDirtyBit(this->blockNum);
 
     if (ret != SUCCESS) {
         return ret;
     }
-
     return SUCCESS;
 }
 
@@ -401,4 +393,29 @@ int compareAttrs(union Attribute attr1, union Attribute attr2, int attrType) {
         return -1;
 
     return 0;
+}
+
+
+// releaseBlock() 
+// Releases the current block from the BUFFER and marks its disk block as unused in BLOCKALLOCMAP
+void BlockBuffer::releaseBlock() {
+
+    // Nothing to release (ALRDY RELEASED)
+    if (this->blockNum == INVALID_BLOCKNUM) {
+        return;
+    }
+
+    // Check whether this block is currently in the buffer.
+    int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
+
+    // Free the buffer entry if the block is loaded.
+    if (bufferNum >= 0) {
+        StaticBuffer::metainfo[bufferNum].free = true;
+        StaticBuffer::metainfo[bufferNum].dirty = false;
+    }
+
+    // update BLOCK ALLOC MAP - Mark the disk block as unused.
+    StaticBuffer::blockAllocMap[this->blockNum] = UNUSED_BLK;
+
+    this->blockNum = INVALID_BLOCKNUM;   // This object no longer refers to a valid block.
 }
