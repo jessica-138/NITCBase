@@ -4,21 +4,28 @@
 #include <cstring>
 
 // openRel
-int Schema::openRel(char relName[ATTR_SIZE]) {
-    return OpenRelTable::openRel(relName);
+int Schema::openRel(char relName[ATTR_SIZE]){
+    int relId=OpenRelTable::openRel(relName);
+    if(relId>=0){
+        return SUCCESS;
+    }
+    return relId;
 }
+
 
 // closeRel
-int Schema::closeRel(char relName[ATTR_SIZE]) {
-
-    int relId = OpenRelTable::getRelId(relName);
-
-    if (relId == E_RELNOTOPEN) {
+int Schema::closeRel(char relName[ATTR_SIZE]){
+    // catalog relations cannot be closed
+    if(strcmp(relName,RELCAT_RELNAME)==0||strcmp(relName,ATTRCAT_RELNAME)==0){
+        return E_NOTPERMITTED;
+    }
+    int relId=OpenRelTable::getRelId(relName);
+    if(relId==E_RELNOTOPEN){
         return E_RELNOTOPEN;
     }
-
     return OpenRelTable::closeRel(relId);
 }
+
 
 // renameRel
 int Schema::renameRel(char oldRelName[ATTR_SIZE],char newRelName[ATTR_SIZE])

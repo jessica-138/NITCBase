@@ -364,7 +364,7 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE]) {
     tableMetaInfo[relId].free = false;
     strcpy(tableMetaInfo[relId].relName, relName);
 
-    return SUCCESS;
+    return relId;
 }
 
 
