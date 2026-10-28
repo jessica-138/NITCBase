@@ -66,3 +66,113 @@ void AttrCacheTable::recordToAttrCatEntry( union Attribute record[ATTRCAT_NO_ATT
     attrCatEntry->rootBlock = (int)record[ATTRCAT_ROOT_BLOCK_INDEX].nVal;
     attrCatEntry->offset =  (int)record[ATTRCAT_OFFSET_INDEX].nVal;
 }
+
+
+// STAGE 10: Get search index by attribute name
+int AttrCacheTable::getSearchIndex(
+    int relId, char attrName[ATTR_SIZE], IndexId *searchIndex) {
+
+    if (relId < 0 || relId >= MAX_OPEN)
+        return E_OUTOFBOUND;
+
+    if (attrCache[relId] == nullptr)
+        return E_RELNOTOPEN;
+
+    for (AttrCacheEntry *curr = attrCache[relId];
+         curr != nullptr; curr = curr->next) {
+
+        if (strcmp(curr->attrCatEntry.attrName, attrName) == 0) {
+            *searchIndex = curr->searchIndex;
+            return SUCCESS;
+        }
+    }
+
+    return E_ATTRNOTEXIST;
+}
+
+
+// STAGE 10: Get search index by attribute offset
+int AttrCacheTable::getSearchIndex(
+    int relId, int attrOffset, IndexId *searchIndex) {
+
+    if (relId < 0 || relId >= MAX_OPEN)
+        return E_OUTOFBOUND;
+
+    if (attrCache[relId] == nullptr)
+        return E_RELNOTOPEN;
+
+    for (AttrCacheEntry *curr = attrCache[relId];
+         curr != nullptr; curr = curr->next) {
+
+        if (curr->attrCatEntry.offset == attrOffset) {
+            *searchIndex = curr->searchIndex;
+            return SUCCESS;
+        }
+    }
+
+    return E_ATTRNOTEXIST;
+}
+
+
+// STAGE 10: Set search index by attribute name
+int AttrCacheTable::setSearchIndex(
+    int relId, char attrName[ATTR_SIZE], IndexId *searchIndex) {
+
+    if (relId < 0 || relId >= MAX_OPEN)
+        return E_OUTOFBOUND;
+
+    if (attrCache[relId] == nullptr)
+        return E_RELNOTOPEN;
+
+    for (AttrCacheEntry *curr = attrCache[relId];
+         curr != nullptr; curr = curr->next) {
+
+        if (strcmp(curr->attrCatEntry.attrName, attrName) == 0) {
+            curr->searchIndex = *searchIndex;
+            return SUCCESS;
+        }
+    }
+
+    return E_ATTRNOTEXIST;
+}
+
+
+// STAGE 10: Set search index by attribute offset
+int AttrCacheTable::setSearchIndex(
+    int relId, int attrOffset, IndexId *searchIndex) {
+
+    if (relId < 0 || relId >= MAX_OPEN)
+        return E_OUTOFBOUND;
+
+    if (attrCache[relId] == nullptr)
+        return E_RELNOTOPEN;
+
+    for (AttrCacheEntry *curr = attrCache[relId];
+         curr != nullptr; curr = curr->next) {
+
+        if (curr->attrCatEntry.offset == attrOffset) {
+            curr->searchIndex = *searchIndex;
+            return SUCCESS;
+        }
+    }
+
+    return E_ATTRNOTEXIST;
+}
+
+
+// STAGE 10: Reset search index by attribute name
+int AttrCacheTable::resetSearchIndex(
+    int relId, char attrName[ATTR_SIZE]) {
+
+    IndexId searchIndex = {-1, -1};
+    return setSearchIndex(relId, attrName, &searchIndex);
+}
+
+
+// STAGE 10: Reset search index by attribute offset
+int AttrCacheTable::resetSearchIndex(
+    int relId, int attrOffset) {
+
+    IndexId searchIndex = {-1, -1};
+    return setSearchIndex(relId, attrOffset, &searchIndex);
+}

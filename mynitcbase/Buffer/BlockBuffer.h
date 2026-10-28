@@ -25,6 +25,8 @@ typedef union Attribute {
 
 int compareAttrs(Attribute attr1, Attribute attr2, int attrType);
 
+extern long long comparisonCount;
+
 struct InternalEntry {
   int32_t lChild;
   union Attribute attrVal;
@@ -91,5 +93,6 @@ class IndLeaf : public IndBuffer {
   int getEntry(void *ptr, int indexNum);
   int setEntry(void *ptr, int indexNum);
 };
+
 
 #endif  // NITCBASE_BLOCKBUFFER_H
