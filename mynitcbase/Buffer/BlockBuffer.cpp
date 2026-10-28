@@ -522,9 +522,9 @@ int IndLeaf::setEntry(void *ptr, int indexNum) {
         return ret;
 
     unsigned char *entryPtr =
-        bufferPtr + HEADER_SIZE + indexNum * sizeof(Index);
+        bufferPtr + HEADER_SIZE + (indexNum * LEAF_ENTRY_SIZE);
 
-    memcpy(entryPtr, ptr, sizeof(Index));
+    memcpy(entryPtr, (struct Index *)ptr, LEAF_ENTRY_SIZE);
 
-    return StaticBuffer::setDirtyBit(blockNum);
+    return StaticBuffer::setDirtyBit(this->blockNum);
 }

@@ -415,11 +415,32 @@ int OpenRelTable::closeRel(int relId) {
         RelCacheTable::relCache[relId] = nullptr;
     }
 
-    // Traverse and free the LL of attribute cache entries
+    // Traverse the LL of attribute cache entries, write back dirty ones, then free
     AttrCacheEntry *current = AttrCacheTable::attrCache[relId];
 
     while (current != nullptr) {
         AttrCacheEntry *next = current->next;
+
+        // NEW: write back the attribute catalog entry if it was modified
+        if (current->dirty) {
+            Attribute attrRecord[ATTRCAT_NO_ATTRS];
+
+            AttrCacheTable::attrCatEntryToRecord(
+                &current->attrCatEntry,
+                attrRecord
+            );
+
+            RecBuffer attrCatBlock(current->recId.block);
+
+            int ret = attrCatBlock.setRecord(
+                attrRecord,
+                current->recId.slot
+            );
+
+            if (ret != SUCCESS)
+                return ret;
+        }
+
         free(current);
         current = next;
     }

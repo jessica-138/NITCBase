@@ -346,57 +346,50 @@ int BlockAccess::insert(int relId, Attribute *record)
 		until a free slot is found OR
 		until the end of the list is reached
 	*/
-	while (blockNum != -1) 
-	{
+	while (blockNum != -1) {
 		// create a RecBuffer object for blockNum (using appropriate constructor!)
 		RecBuffer recBuffer(blockNum);	
 
 		// get header of block(blockNum) using RecBuffer::getHeader() function
 		HeadInfo head;
-    ret = recBuffer.getHeader(&head);
-    if (ret != SUCCESS)
-    {
-      return ret;
-    }
+    	ret = recBuffer.getHeader(&head);
+		if (ret != SUCCESS){
+			return ret;
+		}
 
 		// get slot map of block(blockNum) using RecBuffer::getSlotMap() function
 		unsigned char slotMap[numOfSlots];
-    ret = recBuffer.getSlotMap(slotMap);
-    if (ret != SUCCESS)
-    {
-      return ret;
-    }
+		ret = recBuffer.getSlotMap(slotMap);
+		if (ret != SUCCESS){
+			return ret;
+		}
 
-		// search for free slot in the block 'blockNum' and store it's rec-id in rec_id
-		for (int slot = 0; slot < numOfSlots; slot++)
-    {
+			// search for free slot in the block 'blockNum' and store it's rec-id in rec_id
+		for (int slot = 0; slot < numOfSlots; slot++){
 			if (slotMap[slot] == SLOT_UNOCCUPIED)
 			{
 				rec_id.block = blockNum;
 				rec_id.slot = slot;
 				break;
 			}
-    }
+		}
 
 		// free slot found
-		if (rec_id.block != -1)
-    {
-      break;
-    }
+		if (rec_id.block != -1){
+			break;
+		}
 
 		//free slot not found
 		prevBlockNum = blockNum;
-    blockNum = head.rblock;
+		blockNum = head.rblock;
 	}
 
 	//  if no free slot is found in existing record blocks (rec_id = {-1, -1})
-	if (rec_id.block == -1)
-	{
+	if (rec_id.block == -1){
 		// if relation is RELCAT, do not allocate any more blocks
-		if (relId == RELCAT_RELID)
-    {
-      return E_MAXRELATIONS;
-    }
+		if (relId == RELCAT_RELID) {
+      		return E_MAXRELATIONS;
+    	}
 
 		// Otherwise,
 		RecBuffer newRecBuffer;
@@ -523,12 +516,37 @@ int BlockAccess::insert(int relId, Attribute *record)
 	// Increment the number of records field in the relation cache entry for the relation
 	relCatEntry.numRecs++;
 	ret = RelCacheTable::setRelCatEntry(relId, &relCatEntry);
-	if (ret != SUCCESS)
-	{
+	if (ret != SUCCESS){
 		return ret;
 	}
 
-	return SUCCESS;
+	/* ---------- B+ Tree Insertions (new) ---------- */
+	int flag = SUCCESS;
+
+	for (int attrOffset = 0; attrOffset < numOfAttributes; attrOffset++)
+	{
+		AttrCatEntry attrCatEntry;
+		ret = AttrCacheTable::getAttrCatEntry(relId, attrOffset, &attrCatEntry);
+		if (ret != SUCCESS)
+		{
+			return ret;
+		}
+
+		// index exists on this attribute
+		if (attrCatEntry.rootBlock != -1)
+		{
+			int retVal = BPlusTree::bPlusInsert(relId, attrCatEntry.attrName,
+			                                    record[attrOffset], rec_id);
+
+			if (retVal == E_DISKFULL){
+				// the index on this attribute was destroyed
+				flag = E_INDEX_BLOCKS_RELEASED;
+			}
+		}
+	}
+
+	return flag;   // replaces the old "return SUCCESS;"
+
 }
 
 
@@ -726,7 +744,8 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE])
 
 		if (rootBlock != -1) 
 		{
-			// delete the bplus tree rooted at rootBlock using BPlusTree::bPlusDestroy()
+			// delete the bplus tree rooted at rootBlock
+			BPlusTree::bPlusDestroy(rootBlock);
 		}
 	}
 
