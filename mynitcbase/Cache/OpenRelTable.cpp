@@ -113,6 +113,8 @@ OpenRelTable::OpenRelTable() {
 
         newEntry->dirty = false;
         newEntry->next = nullptr;
+        newEntry->searchIndex.block = -1;
+        newEntry->searchIndex.index = -1;
 
         if (head == nullptr) {
             head = newEntry;
@@ -151,6 +153,8 @@ OpenRelTable::OpenRelTable() {
         newEntry->recId.slot = i;
 
         newEntry->dirty = false;
+        newEntry->searchIndex.block = -1;
+        newEntry->searchIndex.index = -1;
         newEntry->next = nullptr;
 
 
@@ -251,8 +255,9 @@ int OpenRelTable::getFreeOpenRelTableEntry() {
 // openRel()
 int OpenRelTable::openRel(char relName[ATTR_SIZE]) {
      // Check if already open
-    if (getRelId(relName) != E_RELNOTOPEN) {
-        return E_RELOPEN;
+     int existingId = getRelId(relName);
+    if (existingId != E_RELNOTOPEN) {
+        return existingId;  
     }
 
     // Find free cache slot
@@ -346,6 +351,8 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE]) {
 
         newEntry->recId = attrRecId;
         newEntry->dirty = false;
+        newEntry->searchIndex.block = -1;
+        newEntry->searchIndex.index = -1;
         newEntry->next = nullptr;
 
         if (head == nullptr) {

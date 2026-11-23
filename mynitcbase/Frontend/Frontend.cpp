@@ -113,20 +113,53 @@ int Frontend::select_attrlist_from_table_where(
 
 
 
-int Frontend::select_from_join_where(char relname_source_one[ATTR_SIZE], char relname_source_two[ATTR_SIZE],
+// SELECT * FROM Rel1 JOIN Rel2 INTO Target WHERE Rel1.a = Rel2.b
+int Frontend::select_from_join_where(char relname_source_one[ATTR_SIZE],
+                                     char relname_source_two[ATTR_SIZE],
                                      char relname_target[ATTR_SIZE],
-                                     char join_attr_one[ATTR_SIZE], char join_attr_two[ATTR_SIZE]) {
-  // Algebra::join
-  return SUCCESS;
+                                     char join_attr_one[ATTR_SIZE],
+                                     char join_attr_two[ATTR_SIZE]) {
+  // just forward to the Algebra Layer
+  return Algebra::join(relname_source_one, relname_source_two, relname_target,
+                       join_attr_one, join_attr_two);
 }
 
-int Frontend::select_attrlist_from_join_where(char relname_source_one[ATTR_SIZE], char relname_source_two[ATTR_SIZE],
+
+// SELECT attr1, attr2 FROM Rel1 JOIN Rel2 INTO Target WHERE Rel1.a = Rel2.b
+int Frontend::select_attrlist_from_join_where(char relname_source_one[ATTR_SIZE],
+                                              char relname_source_two[ATTR_SIZE],
                                               char relname_target[ATTR_SIZE],
-                                              char join_attr_one[ATTR_SIZE], char join_attr_two[ATTR_SIZE],
-                                              int attr_count, char attr_list[][ATTR_SIZE]) {
-  // Algebra::join + project
-  return SUCCESS;
+                                              char join_attr_one[ATTR_SIZE],
+                                              char join_attr_two[ATTR_SIZE],
+                                              int attr_count,
+                                              char attr_list[][ATTR_SIZE]) {
+	// name of the temporary relation (constant TEMP from constants.h)
+	char temp[ATTR_SIZE];
+	strcpy(temp, TEMP);
+
+	// 1) join into TEMP (holds all attributes except rel2's join attribute)
+	int ret = Algebra::join(relname_source_one, relname_source_two, temp, join_attr_one, join_attr_two);
+	if (ret != SUCCESS) {
+		return ret;
+	}
+
+	// 2) join() closes its target, so open TEMP again for the projection
+	int tempRelId = OpenRelTable::openRel(temp);
+	if (tempRelId < 0) {
+		Schema::deleteRel(temp);
+		return tempRelId;
+	}
+
+	// 3) project the requested attributes from TEMP into the real target
+	ret = Algebra::project(temp, relname_target, attr_count, attr_list);
+
+	// 4) clean up TEMP whether or not project succeeded
+	OpenRelTable::closeRel(tempRelId);
+	Schema::deleteRel(temp);
+
+	return ret;
 }
+
 
 int Frontend::custom_function(int argc, char argv[][ATTR_SIZE]) {
   // argc gives the size of the argv array

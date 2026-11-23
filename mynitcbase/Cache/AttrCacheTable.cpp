@@ -138,8 +138,7 @@ int AttrCacheTable::setSearchIndex(
 
 
 // STAGE 10: Set search index by attribute offset
-int AttrCacheTable::setSearchIndex(
-    int relId, int attrOffset, IndexId *searchIndex) {
+int AttrCacheTable::setSearchIndex(int relId, int attrOffset, IndexId *searchIndex) {
 
     if (relId < 0 || relId >= MAX_OPEN)
         return E_OUTOFBOUND;

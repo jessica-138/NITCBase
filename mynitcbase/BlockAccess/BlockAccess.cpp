@@ -88,14 +88,12 @@ RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attri
     }
 		AttrCatEntry attrCatEntry;
     ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrCatEntry);
-    if (ret != SUCCESS)
-		{
+    if (ret != SUCCESS){
       return RecId{-1, -1};
     }
 
 		Attribute recordAttr = record[attrCatEntry.offset];
 		
-
 		// q2
 		comparisonCount++;
 		int cmpVal = compareAttrs(recordAttr, attrVal, attrCatEntry.attrType);
@@ -901,38 +899,33 @@ int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], 
 	RecId recId;
 	AttrCatEntry attrCatEntry;
 	int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrCatEntry);
-  if (ret != SUCCESS) 
-	{
-    return ret;
-  }
+	if (ret != SUCCESS) {
+		return ret;
+	}
 
 	// If index does not exist for the attribute
-  if (attrCatEntry.rootBlock == -1) 
-	{
-    // Perform linear search
-    recId = linearSearch(relId, attrName, attrVal, op);
-  }
-
-	else 
-	{
+  	if (attrCatEntry.rootBlock == -1) {
+		// Perform linear search
+		recId = linearSearch(relId, attrName, attrVal, op);
+  	}
+	else {
 		// if index exists then perform B+ tree search
-    recId = BPlusTree::bPlusSearch(relId, attrName, attrVal, op);
+   		recId = BPlusTree::bPlusSearch(relId, attrName, attrVal, op);
 	}
 
 
 	// No record satisfying the condition was found
-  if (recId.block == -1 && recId.slot == -1) 
-	{
-    return E_NOTFOUND;
-  }
+	if (recId.block == -1 && recId.slot == -1) {
+		return E_NOTFOUND;
+	}
 
 	// Fetch the actual record using its record ID
-  RecBuffer recBuffer(recId.block);
-  ret = recBuffer.getRecord(record, recId.slot);
-  if (ret != SUCCESS) 
-	{
-    return ret;
-  }
+	RecBuffer recBuffer(recId.block);
+	ret = recBuffer.getRecord(record, recId.slot);
+	if (ret != SUCCESS) 
+		{
+		return ret;
+	}
 
 	return SUCCESS;
 }

@@ -12,3 +12,7 @@ My implementation of the NITCbase database system for the DB Lab.
 - Stage 6: Buffer Management and Disk Write-back
 - Stage 7: Inserting Records Into Relations
 - Stage 8: Creating and Deleting Relations
+- Stage 9: Selection and Projection on Relations
+- Stage 10: B+ Tree Search on Relations 
+- Stage 11: Index Creation and Deletion
+- Stage 12: Join on Relations

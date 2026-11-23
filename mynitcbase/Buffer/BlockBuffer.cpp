@@ -4,6 +4,7 @@
 #include <iostream>
 
 long long comparisonCount = 0;
+long long diskAccessCount = 0;
 
 // the declarations for these functions can be found in "BlockBuffer.h"
 
@@ -262,6 +263,7 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr)
 			return bufferNum;
 
 		Disk::readBlock(StaticBuffer::blocks[bufferNum], this->blockNum);
+		diskAccessCount++;
 	}
 
 	// store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
@@ -455,25 +457,32 @@ int compareAttrs(Attribute attr1, Attribute attr2, int attrType) {
 //     return SUCCESS;
 // }
 
+
+// Retrieves an internal index entry at the given index by loading the block
+// and copying its left child, attribute value, and right child into ptr.
 int IndInternal::getEntry(void *ptr, int indexNum) {
-    if (indexNum < 0 || indexNum >= MAX_KEYS_INTERNAL)
-        return E_OUTOFBOUND;
+	if (indexNum < 0 || indexNum >= MAX_KEYS_INTERNAL)
+		return E_OUTOFBOUND;
 
-    unsigned char *bufferPtr;
-    int ret = loadBlockAndGetBufferPtr(&bufferPtr);
-    if (ret != SUCCESS)
-        return ret;
+	unsigned char *bufferPtr;
+	int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+	if (ret != SUCCESS)
+		return ret;
 
-    InternalEntry *internalEntry = (InternalEntry *)ptr;
-    unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * 20);
+	InternalEntry *internalEntry = (InternalEntry *)ptr;
 
-    memcpy(&(internalEntry->lChild), entryPtr, sizeof(int32_t));
-    memcpy(&(internalEntry->attrVal), entryPtr + 4, sizeof(Attribute));
-    memcpy(&(internalEntry->rChild), entryPtr + 20, sizeof(int32_t));
+	// Calculate the starting address of the required entry
+	unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * INTERNAL_ENTRY_SIZE);
 
-    return SUCCESS;
+	memcpy(&(internalEntry->lChild), entryPtr, sizeof(int32_t));
+	memcpy(&(internalEntry->attrVal), entryPtr + 4, sizeof(Attribute));
+	memcpy(&(internalEntry->rChild), entryPtr + 20, sizeof(int32_t));
+
+	return SUCCESS;
 }
 
+// Retrieves a leaf index entry at the given index by loading the block
+// and copying the entry into ptr.
 int IndLeaf::getEntry(void *ptr, int indexNum) {
     if (indexNum < 0 || indexNum >= MAX_KEYS_LEAF)
         return E_OUTOFBOUND;
@@ -484,9 +493,9 @@ int IndLeaf::getEntry(void *ptr, int indexNum) {
         return ret;
 
     unsigned char *entryPtr =
-        bufferPtr + HEADER_SIZE + indexNum * sizeof(Index);
+        bufferPtr + HEADER_SIZE + (indexNum * LEAF_ENTRY_SIZE);
 
-    memcpy(ptr, entryPtr, sizeof(Index));
+    memcpy(ptr, entryPtr, LEAF_ENTRY_SIZE);
     return SUCCESS;
 }
 
@@ -502,7 +511,7 @@ int IndInternal::setEntry(void *ptr, int indexNum) {
     InternalEntry *internalEntry = (InternalEntry *)ptr;
 
     // each entry starts 20 bytes after the previous one
-    unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * 20);
+    unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * INTERNAL_ENTRY_SIZE);
 
     memcpy(entryPtr, &(internalEntry->lChild), sizeof(int32_t));
     memcpy(entryPtr + 4, &(internalEntry->attrVal), sizeof(Attribute));
